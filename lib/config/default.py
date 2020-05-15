@@ -26,6 +26,7 @@ _C.AUTO_RESUME = False
 _C.PIN_MEMORY = True
 _C.RANK = 0
 _C.USE_GPU = True
+_C.VERSION = 'v0'
 
 # Cudnn related params
 _C.CUDNN = CN()

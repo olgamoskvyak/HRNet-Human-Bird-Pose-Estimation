@@ -29,10 +29,11 @@ def create_logger(cfg, cfg_name, phase='train'):
     dataset = cfg.DATASET.DATASET + '_' + cfg.DATASET.HYBRID_JOINTS_TYPE \
         if cfg.DATASET.HYBRID_JOINTS_TYPE else cfg.DATASET.DATASET
     dataset = dataset.replace(':', '_')
-    model = cfg.MODEL.NAME
+#    model = cfg.MODEL.NAME
     cfg_name = os.path.basename(cfg_name).split('.')[0]
 
-    final_output_dir = root_output_dir / dataset / model / cfg_name
+    #final_output_dir = root_output_dir / dataset / model / cfg_name
+    final_output_dir = root_output_dir / (dataset+'_'+cfg_name+'_'+cfg.VERSION)
 
     print('=> creating {}'.format(final_output_dir))
     final_output_dir.mkdir(parents=True, exist_ok=True)
@@ -48,8 +49,11 @@ def create_logger(cfg, cfg_name, phase='train'):
     console = logging.StreamHandler()
     logging.getLogger('').addHandler(console)
 
-    tensorboard_log_dir = Path(cfg.LOG_DIR) / dataset / model / \
-        (cfg_name + '_' + time_str)
+#    tensorboard_log_dir = Path(cfg.LOG_DIR) / dataset / model / \
+#        (cfg_name + '_' + time_str)
+        
+    tensorboard_log_dir = Path(cfg.LOG_DIR) / \
+        (dataset + '_' + cfg_name + '_' + cfg.VERSION + ' ' + time_str)
 
     print('=> creating {}'.format(tensorboard_log_dir))
     tensorboard_log_dir.mkdir(parents=True, exist_ok=True)
