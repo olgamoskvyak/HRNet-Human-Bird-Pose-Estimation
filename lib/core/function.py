@@ -42,8 +42,9 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
         # compute output
         outputs = model(input)
 
-        target = target.cuda(non_blocking=True)
-        target_weight = target_weight.cuda(non_blocking=True)
+        if config.USE_GPU:
+            target = target.cuda(non_blocking=True)
+            target_weight = target_weight.cuda(non_blocking=True)
 
         if isinstance(outputs, list):
             loss = criterion(outputs[0], target, target_weight)
@@ -92,6 +93,9 @@ def train(config, train_loader, model, criterion, optimizer, epoch,
             prefix = '{}_{}'.format(os.path.join(output_dir, 'train'), i)
             save_debug_images(config, input, meta, target, pred*4, output,
                               prefix)
+            
+        if i > 10:
+            break
 
 
 def validate(config, val_loader, val_dataset, model, criterion, output_dir,
@@ -127,7 +131,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 # this part is ugly, because pytorch has not supported negative index
                 # input_flipped = model(input[:, :, :, ::-1])
                 input_flipped = np.flip(input.cpu().numpy(), 3).copy()
-                input_flipped = torch.from_numpy(input_flipped).cuda()
+                input_flipped = torch.from_numpy(input_flipped)
+                if config.USE_GPU:
+                    input_flipped = input_flipped.cuda()
                 outputs_flipped = model(input_flipped)
 
                 if isinstance(outputs_flipped, list):
@@ -137,7 +143,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
 
                 output_flipped = flip_back(output_flipped.cpu().numpy(),
                                            val_dataset.flip_pairs)
-                output_flipped = torch.from_numpy(output_flipped.copy()).cuda()
+                output_flipped = torch.from_numpy(output_flipped.copy())
+                if config.USE_GPU:
+                    output_flipped = output_flipped.cuda()
 
 
                 # feature is not aligned, shift flipped heatmap for higher accuracy
@@ -147,8 +155,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
 
                 output = (output + output_flipped) * 0.5
 
-            target = target.cuda(non_blocking=True)
-            target_weight = target_weight.cuda(non_blocking=True)
+            if config.USE_GPU:
+                target = target.cuda(non_blocking=True)
+                target_weight = target_weight.cuda(non_blocking=True)
 
             loss = criterion(output, target, target_weight)
 
@@ -164,20 +173,20 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             batch_time.update(time.time() - end)
             end = time.time()
 
-            c = meta['center'].numpy()
-            s = meta['scale'].numpy()
-            score = meta['score'].numpy()
+#            c = meta['center'].numpy()
+#            s = meta['scale'].numpy()
+#            score = meta['score'].numpy()
 
             preds, maxvals = get_final_preds(
-                config, output.clone().cpu().numpy(), c, s)
+                config, output.clone().cpu().numpy(), None, None)
 
             all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2]
             all_preds[idx:idx + num_images, :, 2:3] = maxvals
             # double check this all_boxes parts
-            all_boxes[idx:idx + num_images, 0:2] = c[:, 0:2]
-            all_boxes[idx:idx + num_images, 2:4] = s[:, 0:2]
-            all_boxes[idx:idx + num_images, 4] = np.prod(s*200, 1)
-            all_boxes[idx:idx + num_images, 5] = score
+#            all_boxes[idx:idx + num_images, 0:2] = c[:, 0:2]
+#            all_boxes[idx:idx + num_images, 2:4] = s[:, 0:2]
+#            all_boxes[idx:idx + num_images, 4] = np.prod(s*200, 1)
+#            all_boxes[idx:idx + num_images, 5] = score
             image_path.extend(meta['image'])
 
             idx += num_images
@@ -196,6 +205,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 )
                 save_debug_images(config, input, meta, target, pred*4, output,
                                   prefix)
+                
+            if i>10:
+                break
 
         name_values, perf_indicator = val_dataset.evaluate(
             config, all_preds, output_dir, all_boxes, image_path,
@@ -205,9 +217,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
         model_name = config.MODEL.NAME
         if isinstance(name_values, list):
             for name_value in name_values:
-                _print_name_value(name_value, model_name)
+                _print_name_value_column(name_value, model_name)
         else:
-            _print_name_value(name_values, model_name)
+            _print_name_value_column(name_values, model_name)
 
         if writer_dict:
             writer = writer_dict['writer']
@@ -259,6 +271,12 @@ def _print_name_value(name_value, full_arch_name):
         ' '.join(['| {:.3f}'.format(value) for value in values]) +
          ' |'
     )
+    
+# markdown format output
+def _print_name_value_column(name_value, full_arch_name):
+    logger.info('| Landmark | Accuracy |')
+    for name, value in name_value.items():
+        logger.info('| {} | {:.3f} |'.format(name, value))
 
 
 class AverageMeter(object):

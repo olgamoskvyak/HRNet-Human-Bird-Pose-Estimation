@@ -25,6 +25,7 @@ _C.PRINT_FREQ = 20
 _C.AUTO_RESUME = False
 _C.PIN_MEMORY = True
 _C.RANK = 0
+_C.USE_GPU = True
 
 # Cudnn related params
 _C.CUDNN = CN()

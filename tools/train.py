@@ -108,16 +108,18 @@ def main():
     dump_input = torch.rand(
         (1, 3, cfg.MODEL.IMAGE_SIZE[1], cfg.MODEL.IMAGE_SIZE[0])
     )
-    writer_dict['writer'].add_graph(model, (dump_input, ))
+#    writer_dict['writer'].add_graph(model, (dump_input, ))
 
     logger.info(get_model_summary(model, dump_input))
 
-    model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
+    if cfg.USE_GPU:
+        model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
 
     # define loss function (criterion) and optimizer
-    criterion = JointsMSELoss(
-        use_target_weight=cfg.LOSS.USE_TARGET_WEIGHT
-    ).cuda()
+    criterion = JointsMSELoss(use_target_weight=cfg.LOSS.USE_TARGET_WEIGHT)
+    
+    if cfg.USE_GPU:
+        criterion = criterion.cuda()
 
     # Data loading code
     normalize = transforms.Normalize(
@@ -180,7 +182,6 @@ def main():
     )
 
     for epoch in range(begin_epoch, cfg.TRAIN.END_EPOCH):
-        lr_scheduler.step()
 
         # train for one epoch
         train(cfg, train_loader, model, criterion, optimizer, epoch,
@@ -198,13 +199,15 @@ def main():
             best_model = True
         else:
             best_model = False
+            
+        lr_scheduler.step()
 
         logger.info('=> saving checkpoint to {}'.format(final_output_dir))
         save_checkpoint({
             'epoch': epoch + 1,
             'model': cfg.MODEL.NAME,
             'state_dict': model.state_dict(),
-            'best_state_dict': model.module.state_dict(),
+            'best_state_dict': model.state_dict(),
             'perf': perf_indicator,
             'optimizer': optimizer.state_dict(),
         }, best_model, final_output_dir)
