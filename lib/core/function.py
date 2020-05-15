@@ -180,7 +180,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             preds, maxvals = get_final_preds(
                 config, output.clone().cpu().numpy(), None, None)
 
-            all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2]
+            all_preds[idx:idx + num_images, :, 0:2] = preds[:, :, 0:2] * 4   # to go from hm size 64 to image size 256
             all_preds[idx:idx + num_images, :, 2:3] = maxvals
             # double check this all_boxes parts
 #            all_boxes[idx:idx + num_images, 0:2] = c[:, 0:2]
