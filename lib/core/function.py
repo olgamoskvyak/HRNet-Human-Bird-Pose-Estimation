@@ -193,8 +193,8 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             
             #Export annotations
             for j in range(num_images):
-                annot = {"joints_vis": maxvals[j],
-                         "joints": pred[j],
+                annot = {"joints_vis": maxvals[j].tolist(),
+                         "joints": pred[j].tolist(),
                          "image": meta['image'][j]
                         }
                 export_annots.append(annot)
