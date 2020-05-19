@@ -95,12 +95,15 @@ def main():
         logger.info('=> loading model from {}'.format(model_state_file))
         model.load_state_dict(torch.load(model_state_file))
 
-    model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
+    if cfg.USE_GPU:
+        model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
 
     # define loss function (criterion) and optimizer
     criterion = JointsMSELoss(
         use_target_weight=cfg.LOSS.USE_TARGET_WEIGHT
-    ).cuda()
+    )
+    if cfg.USE_GPU:
+        criterion = criterion.cuda()
 
     # Data loading code
     normalize = transforms.Normalize(
