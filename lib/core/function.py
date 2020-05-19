@@ -11,6 +11,7 @@ from __future__ import print_function
 import time
 import logging
 import os
+import json
 
 import numpy as np
 import torch
@@ -117,6 +118,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
     filenames = []
     imgnums = []
     idx = 0
+    export_annots = []
     with torch.no_grad():
         end = time.time()
         for i, (input, target, target_weight, meta) in enumerate(val_loader):
@@ -188,6 +190,14 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
 #            all_boxes[idx:idx + num_images, 4] = np.prod(s*200, 1)
 #            all_boxes[idx:idx + num_images, 5] = score
             image_path.extend(meta['image'])
+            
+            #Export annotations
+            for j in range(num_images):
+                annot = {"joints_vis": maxvals[i],
+                         "joints": pred[j],
+                         "image": meta['image'][j]
+                        }
+                export_annots.append(annot)
 
             idx += num_images
 
@@ -248,6 +258,9 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                     global_steps
                 )
             writer_dict['valid_global_steps'] = global_steps + 1
+            
+    with open(os.path.join(output_dir, 'pred_annotations.json'), 'w', encoding='utf-8') as f:
+        json.dump(export_annots, f, ensure_ascii=False, indent=4)
 
     return perf_indicator
 
