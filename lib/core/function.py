@@ -193,8 +193,8 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             
             #Export annotations
             for j in range(num_images):
-                annot = {"joints_vis": maxvals[j].tolist(),
-                         "joints": pred[j].tolist(),
+                annot = {"joints_vis": maxvals[j].squeeze().tolist(),
+                         "joints": (pred[j]*4).tolist(),
                          "image": meta['image'][j]
                         }
                 export_annots.append(annot)
@@ -259,7 +259,7 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 )
             writer_dict['valid_global_steps'] = global_steps + 1
             
-    with open(os.path.join(output_dir, 'pred_annotations.json'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(output_dir, '{}_pred_annots_{}.json'.format(config.DATASET.TEST_SET, time.strftime('%Y-%m-%d-%H-%M'))), 'w', encoding='utf-8') as f:
         json.dump(export_annots, f, ensure_ascii=False, indent=4)
 
     return perf_indicator
