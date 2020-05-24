@@ -96,6 +96,9 @@ class MPIIDataset(JointsDataset):
     def evaluate(self, cfg, preds, output_dir, *args, **kwargs):
         # convert 0-based index to 1-based index
         preds = preds[:, :, 0:2] + 1.0
+        
+        if cfg.TEST.NO_GT_LABELS:
+            return {'Null': 0.0}, 0.0
 
         if output_dir:
             pred_file = os.path.join(output_dir, 'pred.mat')
