@@ -237,13 +237,12 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
         else:
             _print_name_value_column(name_values, model_name)
             
-        if not config.LOSS.USE_TARGET_WEIGHT:
-            #Compute and display accuracy, precision and recall
-            target_weights = torch.cat(target_weights, dim=0).squeeze()
-            gt_vis = ~target_weights.cpu().numpy().astype(bool)
-            pred_max_vals_valid = np.concatenate(pred_max_vals_valid, axis=0)
-            msg_notvis = metrics_notvisible(pred_max_vals_valid, gt_vis)
-            logger.info(msg_notvis)
+        #Compute and display accuracy, precision and recall
+        target_weights = torch.cat(target_weights, dim=0).squeeze()
+        gt_vis = ~target_weights.cpu().numpy().astype(bool)
+        pred_max_vals_valid = np.concatenate(pred_max_vals_valid, axis=0)
+        msg_notvis = metrics_notvisible(pred_max_vals_valid, gt_vis)
+        logger.info(msg_notvis)
 
         if writer_dict:
             writer = writer_dict['writer']
