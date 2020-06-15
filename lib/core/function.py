@@ -16,8 +16,8 @@ import json
 import numpy as np
 import torch
 
-from core.evaluate import accuracy
-from core.inference import get_final_preds
+from core.evaluate import accuracy, metrics_notvisible
+from core.inference import get_final_preds, get_max_preds
 from utils.transforms import flip_back
 from utils.vis import save_debug_images
 
@@ -119,6 +119,8 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
     imgnums = []
     idx = 0
     export_annots = []
+    target_weights = []
+    pred_max_vals_valid = []
     with torch.no_grad():
         end = time.time()
         for i, (input, target, target_weight, meta) in enumerate(val_loader):
@@ -128,6 +130,8 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 output = outputs[-1]
             else:
                 output = outputs
+                
+            target_weights.append(target_weight)
 
             if config.TEST.FLIP_TEST:
                 # this part is ugly, because pytorch has not supported negative index
@@ -168,8 +172,10 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
             losses.update(loss.item(), num_images)
             _, avg_acc, cnt, pred = accuracy(output.cpu().numpy(),
                                              target.cpu().numpy())
+            pred_maxvals = get_max_preds(output.cpu().numpy())[1]
 
             acc.update(avg_acc, cnt)
+            pred_max_vals_valid.append(pred_maxvals)
 
             # measure elapsed time
             batch_time.update(time.time() - end)
@@ -230,6 +236,14 @@ def validate(config, val_loader, val_dataset, model, criterion, output_dir,
                 _print_name_value_column(name_value, model_name)
         else:
             _print_name_value_column(name_values, model_name)
+            
+        if not config.LOSS.USE_TARGET_WEIGHT:
+            #Compute and display accuracy, precision and recall
+            target_weights = torch.cat(target_weights, dim=0).squeeze()
+            gt_vis = ~target_weights.cpu().numpy().astype(bool)
+            pred_max_vals_valid = np.concatenate(pred_max_vals_valid, axis=0)
+            msg_notvis = metrics_notvisible(pred_max_vals_valid, gt_vis)
+            logger.info(msg_notvis)
 
         if writer_dict:
             writer = writer_dict['writer']

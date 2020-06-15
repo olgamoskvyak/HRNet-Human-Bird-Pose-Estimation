@@ -112,6 +112,8 @@ def main():
     valid_dataset = eval('dataset.'+cfg.DATASET.DATASET)(
         cfg, cfg.DATASET.ROOT, cfg.DATASET.TEST_SET, False,
         transforms.Compose([
+#            transforms.ToPILImage(),
+#            transforms.Pad(padding=(64,0,64,0), fill=0, padding_mode='constant'),
             transforms.ToTensor(),
             normalize,
         ])
